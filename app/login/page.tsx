@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -34,7 +35,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -75,77 +76,92 @@ export default function LoginPage() {
   }
 
   return (
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle className="text-2xl">Sign in</CardTitle>
+        <CardDescription>
+          Enter your credentials to access your account
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {registered && (
+              <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-700 dark:text-green-400">
+                Account created successfully! Please sign in.
+              </div>
+            )}
+
+            {error && (
+              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="john@example.com"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Sign in
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+      <CardFooter className="flex justify-center">
+        <p className="text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-primary hover:underline">
+            Create one
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign in</CardTitle>
-          <CardDescription>
-            Enter your credentials to access your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {registered && (
-                <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-700 dark:text-green-400">
-                  Account created successfully! Please sign in.
-                </div>
-              )}
-
-              {error && (
-                <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="john@example.com"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign in
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-primary hover:underline">
-              Create one
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+      <Suspense fallback={
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-2xl">Sign in</CardTitle>
+            <CardDescription>Loading...</CardDescription>
+          </CardHeader>
+        </Card>
+      }>
+        <LoginForm />
+      </Suspense>
     </div>
   );
 }
