@@ -5,12 +5,13 @@ import Song from "@/models/Song"
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     await dbConnect()
 
-    const song = await Song.findById(params.id)
+    const song = await Song.findById(id)
       .populate('createdBy', 'name email')
       .populate('comments.user', 'name')
 
