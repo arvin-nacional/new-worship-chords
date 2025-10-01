@@ -3,11 +3,11 @@ import { auth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { Music, Plus, Search, Star, Eye, Heart } from "lucide-react"
+import { Music, Plus, Star, Eye, Heart } from "lucide-react"
 import dbConnect from "@/lib/mongoose"
 import Song from "@/models/Song"
+import { SongSearch } from "@/components/forms/song-search"
 
 export const dynamic = 'force-dynamic'
 
@@ -80,17 +80,7 @@ export default async function SongsPage({
         {/* Search and Filters */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search songs, artists, or tags..."
-                  className="pl-10"
-                  defaultValue={searchParams.search}
-                />
-              </div>
-              <Button variant="outline">Filters</Button>
-            </div>
+            <SongSearch />
           </CardContent>
         </Card>
 
