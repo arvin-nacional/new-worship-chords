@@ -4,6 +4,15 @@ import dbConnect from "@/lib/mongoose";
 import Song from "@/models/Song"
 import { addSongSchema } from "@/lib/validations/song"
 
+// Helper function to escape regex metacharacters and prevent ReDoS
+function sanitizeSearchInput(input: string): string {
+  // Truncate to prevent overly long input (max 100 chars)
+  const truncated = input.slice(0, 100)
+  
+  // Escape all regex metacharacters
+  return truncated.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export async function POST(request: Request) {
   try {
     // Check authentication
@@ -69,6 +78,7 @@ export async function POST(request: Request) {
     )
   }
 }
+
 export async function GET(request: Request) {
     try {
       await dbConnect()
@@ -86,12 +96,28 @@ export async function GET(request: Request) {
       const query: any = {}
       
       if (search) {
-        query.$or = [
-          { title: { $regex: search, $options: 'i' } },
-          { artist: { $regex: search, $options: 'i' } },
-          { writer: { $regex: search, $options: 'i' } },
-          { tags: { $in: [new RegExp(search, 'i')] } }
-        ]
+        // Sanitize search input to prevent ReDoS attacks
+        const sanitizedSearch = sanitizeSearchInput(search)
+        
+        try {
+          // Safely create regex pattern
+          const searchRegex = new RegExp(sanitizedSearch, 'i')
+          
+          query.$or = [
+            { title: { $regex: sanitizedSearch, $options: 'i' } },
+            { artist: { $regex: sanitizedSearch, $options: 'i' } },
+            { writer: { $regex: sanitizedSearch, $options: 'i' } },
+            { tags: { $in: [searchRegex] } }
+          ]
+        } catch (regexError) {
+          // If regex creation fails, fall back to simple string matching
+          console.warn('Invalid regex pattern, using fallback search:', regexError)
+          query.$or = [
+            { title: { $regex: sanitizedSearch, $options: 'i' } },
+            { artist: { $regex: sanitizedSearch, $options: 'i' } },
+            { writer: { $regex: sanitizedSearch, $options: 'i' } }
+          ]
+        }
       }
       
       if (key) query.originalKey = key

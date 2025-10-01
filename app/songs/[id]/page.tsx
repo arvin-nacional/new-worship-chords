@@ -22,39 +22,46 @@ type PopulatedSong = Omit<ISong, 'createdBy'> & {
 export const dynamic = 'force-dynamic'
 
 export default async function SongDetailPage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  const session = await auth()
-  
-  if (!session) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <Music className="h-16 w-16 text-muted-foreground mx-auto" />
-          <h1 className="text-2xl font-bold">Please Sign In</h1>
-          <p className="text-muted-foreground">You need to be signed in to view songs</p>
-          <Button asChild>
-            <Link href="/login">Sign In</Link>
-          </Button>
+    params,
+  }: {
+    params: Promise<{ id: string }>
+  }) {
+    const session = await auth()
+    
+    if (!session) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center p-8">
+          <div className="text-center space-y-4">
+            <Music className="h-16 w-16 text-muted-foreground mx-auto" />
+            <h1 className="text-2xl font-bold">Please Sign In</h1>
+            <p className="text-muted-foreground">You need to be signed in to view songs</p>
+            <Button asChild>
+              <Link href="/login">Sign In</Link>
+            </Button>
+          </div>
         </div>
-      </div>
-    )
-  }
-
-  await dbConnect()
-
-  const song = await Song.findById(params.id)
-  .populate('createdBy', 'name email')
-  .lean() as PopulatedSong | null
-
-  if (!song) {
-    notFound()
-  }
-
-  // Increment view count (in a real app, you'd do this in an API route to avoid bots)
-  await Song.findByIdAndUpdate(params.id, { $inc: { viewCount: 1 } })
+      )
+    }
+  
+    const { id } = await params
+  
+    // Validate ObjectId before querying to prevent Mongoose CastError
+    if (!Types.ObjectId.isValid(id)) {
+      notFound()
+    }
+  
+    await dbConnect()
+  
+    const song = await Song.findById(id)
+      .populate('createdBy', 'name email')
+      .lean() as PopulatedSong | null
+  
+    if (!song) {
+      notFound()
+    }
+  
+    // Increment view count (in a real app, you'd do this in an API route to avoid bots)
+    await Song.findByIdAndUpdate(id, { $inc: { viewCount: 1 } })
 
   return (
     <div className="min-h-screen bg-background">

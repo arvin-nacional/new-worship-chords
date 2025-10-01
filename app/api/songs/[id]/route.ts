@@ -11,6 +11,8 @@ export async function GET(
     const { id } = await params
     await dbConnect()
 
+    
+
     const song = await Song.findById(id)
       .populate('createdBy', 'name email')
       .populate('comments.user', 'name')
