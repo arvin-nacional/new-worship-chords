@@ -40,7 +40,7 @@ export default async function EditSongPage({
     redirect(`/songs/${id}`)
   }
 
- // Prepare initial values for the form
+  // Prepare initial values for the form
 const initialValues = {
     title: song.title,
     artist: song.artist || "",
@@ -55,13 +55,17 @@ const initialValues = {
     spotifyId: song.spotifyId || "",
     imageUrl: song.imageUrl || "",
     tags: song.tags || [],
+    vocalsUrl: song.vocalsUrl || "",
+    instrumentalUrl: song.instrumentalUrl || "",
   }
 
   return (
     <AddSongForm 
       mode="edit" 
       initialValues={initialValues} 
-      songId={id} 
+      songId={id}
+      initialVocalsUrl={song.vocalsUrl}
+      initialInstrumentalUrl={song.instrumentalUrl}
     />
   )
 }

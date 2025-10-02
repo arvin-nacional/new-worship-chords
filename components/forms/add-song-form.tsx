@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Music, Plus, X, Sparkles, Loader2, Wand2 } from "lucide-react"
+import { Music, Plus, X, Sparkles, Loader2, Wand2, Mic, CheckCircle2, AlertCircle, Upload } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -39,15 +39,27 @@ interface SongFormProps {
   mode?: "add" | "edit"
   initialValues?: Partial<AddSongFormValues>
   songId?: string
+  initialVocalsUrl?: string
+  initialInstrumentalUrl?: string
 }
 
-export function AddSongForm({ mode = "add", initialValues, songId }: SongFormProps) {
+export function AddSongForm({ mode = "add", initialValues, songId, initialVocalsUrl, initialInstrumentalUrl }: SongFormProps) {
   const [tags, setTags] = useState<string[]>(initialValues?.tags || [])
   const [tagInput, setTagInput] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
+  const [isExtractingVocals, setIsExtractingVocals] = useState(false)
+  const [extractionError, setExtractionError] = useState<string | null>(null)
+  const [extractionSuccess, setExtractionSuccess] = useState<string | null>(null)
+  const [vocalsUrl, setVocalsUrl] = useState<string | null>(initialVocalsUrl || null)
+  const [isUploadingVocals, setIsUploadingVocals] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isUploadingInstrumental, setIsUploadingInstrumental] = useState(false)
+  const [instrumentalUploadError, setInstrumentalUploadError] = useState<string | null>(null)
+  const [instrumentalSuccess, setInstrumentalSuccess] = useState<string | null>(null)
+  const [instrumentalUrl, setInstrumentalUrl] = useState<string | null>(initialInstrumentalUrl || null)
   
 
   const form = useForm<AddSongFormValues>({
@@ -70,7 +82,7 @@ export function AddSongForm({ mode = "add", initialValues, songId }: SongFormPro
   })
 
   const title = form.watch("title")
-
+  const videoId = form.watch("videoId")
   const generateSongDetails = async () => {
     if (!title || title.trim().length < 2) {
       setGenerateError("Please enter a song title first")
@@ -129,6 +141,116 @@ export function AddSongForm({ mode = "add", initialValues, songId }: SongFormPro
     const newTags = tags.filter(tag => tag !== tagToRemove)
     setTags(newTags)
     form.setValue("tags", newTags)
+  }
+
+  const uploadVocals = async (file: File) => {
+    if (!songId) {
+      setUploadError("Please save the song first before uploading vocals")
+      return
+    }
+
+    setIsUploadingVocals(true)
+    setUploadError(null)
+    setExtractionSuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("songId", songId)
+
+      const response = await fetch("/api/songs/upload-vocals", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload vocals")
+      }
+
+      setVocalsUrl(data.vocalsUrl)
+      setExtractionSuccess("Vocals uploaded successfully!")
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Failed to upload vocals")
+    } finally {
+      setIsUploadingVocals(false)
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      const validTypes = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/m4a"]
+      if (!validTypes.includes(file.type)) {
+        setUploadError("Please upload a valid audio file (WAV, MP3, or M4A)")
+        return
+      }
+      
+      // Validate file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        setUploadError("File size must be less than 50MB")
+        return
+      }
+
+      uploadVocals(file)
+    }
+  }
+
+  const uploadInstrumental = async (file: File) => {
+    if (!songId) {
+      setInstrumentalUploadError("Please save the song first before uploading instrumental")
+      return
+    }
+
+    setIsUploadingInstrumental(true)
+    setInstrumentalUploadError(null)
+    setInstrumentalSuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("songId", songId)
+
+      const response = await fetch("/api/songs/upload-instrumental", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload instrumental")
+      }
+
+      setInstrumentalUrl(data.instrumentalUrl)
+      setInstrumentalSuccess("Instrumental uploaded successfully!")
+    } catch (error) {
+      setInstrumentalUploadError(error instanceof Error ? error.message : "Failed to upload instrumental")
+    } finally {
+      setIsUploadingInstrumental(false)
+    }
+  }
+
+  const handleInstrumentalFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      const validTypes = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/m4a"]
+      if (!validTypes.includes(file.type)) {
+        setInstrumentalUploadError("Please upload a valid audio file (WAV, MP3, or M4A)")
+        return
+      }
+      
+      // Validate file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        setInstrumentalUploadError("File size must be less than 50MB")
+        return
+      }
+
+      uploadInstrumental(file)
+    }
   }
 
   const onSubmit = async (data: AddSongFormValues) => {
@@ -436,7 +558,7 @@ Or enter your own lyrics with chords above the words.`}
               <CardDescription>Optional media links</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <FormField
+            <FormField
                 control={form.control}
                 name="videoId"
                 render={({ field }) => (
@@ -452,6 +574,140 @@ Or enter your own lyrics with chords above the words.`}
                   </FormItem>
                 )}
               />
+
+              {/* Vocals File Upload */}
+              {mode === "edit" && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Upload Vocals Audio File</label>
+                    <div className="mt-2">
+                      <label 
+                        htmlFor="vocals-upload"
+                        className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                      >
+                        {isUploadingVocals ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5" />
+                            <span>Click to upload vocals audio file (WAV, MP3, M4A)</span>
+                          </>
+                        )}
+                      </label>
+                      <input
+                        id="vocals-upload"
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleFileChange}
+                        disabled={isUploadingVocals}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Max file size: 50MB
+                    </p>
+                  </div>
+
+                  {/* Upload Status Messages */}
+                  {uploadError && (
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{uploadError}</span>
+                    </div>
+                  )}
+
+                  {extractionSuccess && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3 rounded-md border border-green-200 dark:border-green-800">
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <span>{extractionSuccess}</span>
+                    </div>
+                  )}
+
+                  {/* Audio Player for Uploaded Vocals */}
+                  {vocalsUrl && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Uploaded Vocals:</p>
+                      <audio 
+                        controls 
+                        className="w-full"
+                        src={vocalsUrl}
+                      >
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+
+                                {/* Instrumental File Upload */}
+              {mode === "edit" && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Upload Instrumental Audio File</label>
+                    <div className="mt-2">
+                      <label 
+                        htmlFor="instrumental-upload"
+                        className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                      >
+                        {isUploadingInstrumental ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5" />
+                            <span>Click to upload instrumental audio file (WAV, MP3, M4A)</span>
+                          </>
+                        )}
+                      </label>
+                      <input
+                        id="instrumental-upload"
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleInstrumentalFileChange}
+                        disabled={isUploadingInstrumental}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Max file size: 50MB
+                    </p>
+                  </div>
+
+                  {/* Upload Status Messages */}
+                  {instrumentalUploadError && (
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{instrumentalUploadError}</span>
+                    </div>
+                  )}
+
+                  {instrumentalSuccess && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3 rounded-md border border-green-200 dark:border-green-800">
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <span>{instrumentalSuccess}</span>
+                    </div>
+                  )}
+
+                  {/* Audio Player for Uploaded Instrumental */}
+                  {instrumentalUrl && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Uploaded Instrumental:</p>
+                      <audio 
+                        controls 
+                        className="w-full"
+                        src={instrumentalUrl}
+                      >
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+                </div>
+              )}
+                </div>
+              )}
 
               <FormField
                 control={form.control}

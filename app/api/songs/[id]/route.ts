@@ -88,6 +88,8 @@ export async function PUT(
         spotifyId: body.spotifyId,
         imageUrl: body.imageUrl,
         tags: body.tags,
+        vocalsUrl: body.vocalsUrl,
+        instrumentalUrl: body.instrumentalUrl,
       },
       { 
         new: true, // Return the updated document
@@ -103,6 +105,54 @@ export async function PUT(
     console.error("Error updating song:", error)
     return NextResponse.json(
       { error: "Failed to update song" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth()
+    if (!session) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
+    const { id } = await params
+    await dbConnect()
+
+    const song = await Song.findById(id)
+
+    if (!song) {
+      return NextResponse.json(
+        { error: "Song not found" },
+        { status: 404 }
+      )
+    }
+
+    // Check if user is the creator
+    if (song.createdBy.toString() !== session.user.id) {
+      return NextResponse.json(
+        { error: "Forbidden - You can only delete your own songs" },
+        { status: 403 }
+      )
+    }
+
+    // Delete the song
+    await Song.findByIdAndDelete(id)
+
+    return NextResponse.json({ 
+      message: "Song deleted successfully" 
+    })
+  } catch (error) {
+    console.error("Error deleting song:", error)
+    return NextResponse.json(
+      { error: "Failed to delete song" },
       { status: 500 }
     )
   }

@@ -48,8 +48,12 @@ export interface ISong extends Document {
   
   // Media
   imageUrl?: string;
-  videoId?: string; // YouTube video ID
+  videoId?: string;
   spotifyId?: string;
+  vocalsUrl?: string; // S3 URL for extracted vocals
+  instrumentalUrl?: string; // S3 URL for extracted instrumentals
+
+
   
   // Metadata
   tags: string[];
@@ -214,6 +218,14 @@ const songSchema = new Schema<ISong>(
       ],
     },
     spotifyId: {
+      type: String,
+      trim: true,
+    },
+    vocalsUrl: {
+      type: String,
+      trim: true,
+    },
+    instrumentalUrl: {
       type: String,
       trim: true,
     },

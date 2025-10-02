@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { ArrowLeft, Music, Star, Eye, Heart, Clock, User, Pencil } from "lucide-react"
+import { ArrowLeft, Music, Star, Eye, Heart, Clock, User, Pencil, Trash2 } from "lucide-react"
 import dbConnect from "@/lib/mongoose"
 import Song, { ISong } from "@/models/Song"
 import { Types } from "mongoose"
 import { notFound } from "next/navigation"
 import { ChordTransposer } from "@/components/chord-transposer"
 import { YouTubeVideo } from "@/components/youtube-video"
+import { DeleteSongButton } from "@/components/forms/delete-song-button"
 
 // Type for song with populated createdBy field
 type PopulatedSong = Omit<ISong, 'createdBy'> & {
@@ -87,14 +88,18 @@ export default async function SongDetailPage({
                 {song.artist || 'Unknown Artist'}
               </p>
             </div>
-            {session?.user?.id === song.createdBy?._id?.toString() && (
-              <Button variant="outline" asChild>
-                <Link href={`/songs/${song._id}/edit`}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit
-                </Link>
-              </Button>
-            )}
+            {/* Action Buttons - Only show if user is creator */}
+          {session?.user?.id === song.createdBy?._id?.toString() && (
+            <div className="flex gap-2">
+              <Link href={`/songs/${song._id}/edit`}>
+                <Button variant="outline" className="gap-2">
+                  <Pencil className="h-4 w-4" />
+                  Edit Song
+                </Button>
+              </Link>
+              <DeleteSongButton songId={song._id.toString()} songTitle={song.title} />
+            </div>
+          )}
           </div>
 
           {/* Stats Bar */}
@@ -120,10 +125,52 @@ export default async function SongDetailPage({
 
         {/* Song Details */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-                        {/* Lyrics and Chords */}
-                        {song.sections && song.sections.length > 0 ? (
+                    {/* Main Content */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Vocals Audio Player - FIRST for practice */}
+                        {song.vocalsUrl && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>🎤 Vocals Track</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <audio 
+                    controls 
+                    className="w-full"
+                    src={song.vocalsUrl}
+                  >
+                    Your browser does not support the audio element.
+                  </audio>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Isolated vocals audio track - Practice singing along!
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Instrumental Audio Player */}
+            {song.instrumentalUrl && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>🎸 Instrumental Track</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <audio 
+                    controls 
+                    className="w-full"
+                    src={song.instrumentalUrl}
+                  >
+                    Your browser does not support the audio element.
+                  </audio>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Instrumental track - Play along without vocals!
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Lyrics and Chords - SECOND for reference while playing */}
+            {song.sections && song.sections.length > 0 ? (
               <Card>
                 <CardHeader>
                   <CardTitle>Lyrics & Chords</CardTitle>
@@ -178,10 +225,8 @@ export default async function SongDetailPage({
                 </CardContent>
               </Card>
             )}
-            {/* YouTube Video */}
-            {song.videoId && (
-              <YouTubeVideo videoId={song.videoId} />
-            )}
+            
+ 
           </div>
 
           {/* Sidebar */}
@@ -273,6 +318,10 @@ export default async function SongDetailPage({
                 </p>
               </CardContent>
             </Card>
+                       {/* YouTube Video - LAST for reference */}
+            {song.videoId && (
+              <YouTubeVideo videoId={song.videoId} />
+            )}
           </div>
         </div>
       </div>
