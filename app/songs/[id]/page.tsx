@@ -9,7 +9,8 @@ import dbConnect from "@/lib/mongoose"
 import Song, { ISong } from "@/models/Song"
 import { Types } from "mongoose"
 import { notFound } from "next/navigation"
-
+import { ChordTransposer } from "@/components/chord-transposer"
+import { YouTubeVideo } from "@/components/youtube-video"
 
 // Type for song with populated createdBy field
 type PopulatedSong = Omit<ISong, 'createdBy'> & {
@@ -121,13 +122,13 @@ export default async function SongDetailPage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Lyrics and Chords */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Lyrics & Chords</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {song.sections && song.sections.length > 0 ? (
+                        {/* Lyrics and Chords */}
+                        {song.sections && song.sections.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lyrics & Chords</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-8">
                     {song.sections.map((section: any, idx: number) => (
                       <div key={idx} className="space-y-2">
@@ -160,15 +161,27 @@ export default async function SongDetailPage({
                       </div>
                     ))}
                   </div>
-                ) : song.lyricsText ? (
-                  <pre className="font-mono text-sm whitespace-pre-wrap bg-muted/30 p-4 rounded-lg">
-                    {song.lyricsText}
-                  </pre>
-                ) : (
+                </CardContent>
+              </Card>
+            ) : song.lyricsText ? (
+              <ChordTransposer 
+                lyricsText={song.lyricsText} 
+                originalKey={song.originalKey} 
+              />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lyrics & Chords</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <p className="text-muted-foreground">No lyrics available</p>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
+            {/* YouTube Video */}
+            {song.videoId && (
+              <YouTubeVideo videoId={song.videoId} />
+            )}
           </div>
 
           {/* Sidebar */}

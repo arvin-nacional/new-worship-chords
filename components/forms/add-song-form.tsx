@@ -35,26 +35,37 @@ import {
   timeSignatures,
 } from "@/lib/validations/song"
 
-export function AddSongForm() {
-  const [tags, setTags] = useState<string[]>([])
+interface SongFormProps {
+  mode?: "add" | "edit"
+  initialValues?: Partial<AddSongFormValues>
+  songId?: string
+}
+
+export function AddSongForm({ mode = "add", initialValues, songId }: SongFormProps) {
+  const [tags, setTags] = useState<string[]>(initialValues?.tags || [])
   const [tagInput, setTagInput] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
+  
 
   const form = useForm<AddSongFormValues>({
     resolver: zodResolver(addSongSchema),
     defaultValues: {
-      title: "",
-      artist: "",
-      writer: "",
-      originalKey: "C",
-      timeSignature: "4/4",
-      capo: 0,
-      difficulty: "intermediate",
-      tags: [],
-      lyricsText: "",
+      title: initialValues?.title || "",
+      artist: initialValues?.artist || "",
+      writer: initialValues?.writer || "",
+      originalKey: initialValues?.originalKey || "C",
+      tempo: initialValues?.tempo || undefined,
+      timeSignature: initialValues?.timeSignature || "4/4",
+      capo: initialValues?.capo || 0,
+      difficulty: initialValues?.difficulty || "intermediate",
+      tags: initialValues?.tags || [],
+      lyricsText: initialValues?.lyricsText || "",
+      videoId: initialValues?.videoId || "",
+      spotifyId: initialValues?.spotifyId || "",
+      imageUrl: initialValues?.imageUrl || "",
     },
   })
 
@@ -123,26 +134,29 @@ export function AddSongForm() {
   const onSubmit = async (data: AddSongFormValues) => {
     setIsSubmitting(true)
     setSubmitError(null)
-
+  
     try {
-      const response = await fetch("/api/songs", {
-        method: "POST",
+      const url = mode === "edit" ? `/api/songs/${songId}` : "/api/songs"
+      const method = mode === "edit" ? "PUT" : "POST"
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       })
-
+  
       const result = await response.json()
-
+  
       if (!response.ok) {
-        throw new Error(result.error || "Failed to publish song")
+        throw new Error(result.error || `Failed to ${mode} song`)
       }
-
-      // Success! Redirect to the song page or songs list
+  
+      // Success! Redirect to the song page
       window.location.href = `/songs/${result.song._id}`
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Failed to publish song")
+      setSubmitError(error instanceof Error ? error.message : `Failed to ${mode} song`)
     } finally {
       setIsSubmitting(false)
     }
@@ -152,13 +166,13 @@ export function AddSongForm() {
     <div className="w-full max-w-5xl mx-auto p-6 space-y-8">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
-          <Music className="h-10 w-10 text-primary" />
-          Add New Song
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Share a worship song with chord progressions and lyrics
-        </p>
+      <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
+  <Music className="h-10 w-10 text-primary" />
+  {mode === "edit" ? "Edit Song" : "Add New Song"}
+</h1>
+<p className="text-muted-foreground text-lg">
+  {mode === "edit" ? "Update song details and lyrics" : "Share a worship song with chord progressions and lyrics"}
+</p>
       </div>
 
       <Form {...form}>
@@ -537,23 +551,23 @@ Or enter your own lyrics with chords above the words.`}
               Cancel
             </Button>
             <Button 
-              type="submit" 
-              size="lg" 
-              className="gap-2"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Publishing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Publish Song
-                </>
-              )}
-            </Button>
+  type="submit" 
+  size="lg" 
+  className="gap-2"
+  disabled={isSubmitting}
+>
+  {isSubmitting ? (
+    <>
+      <Loader2 className="h-4 w-4 animate-spin" />
+      {mode === "edit" ? "Updating..." : "Publishing..."}
+    </>
+  ) : (
+    <>
+      <Sparkles className="h-4 w-4" />
+      {mode === "edit" ? "Update Song" : "Publish Song"}
+    </>
+  )}
+</Button>
           </div>
         </form>
       </Form>

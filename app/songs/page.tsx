@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 export default async function SongsPage({
   searchParams,
 }: {
-  searchParams: { search?: string; key?: string; difficulty?: string }
+  searchParams: Promise<{ search?: string; key?: string; difficulty?: string }>
 }) {
   const session = await auth()
   
@@ -37,16 +37,17 @@ export default async function SongsPage({
 
   // Build query
   const query: any = {}
-  if (searchParams.search) {
-    query.$or = [
-      { title: { $regex: searchParams.search, $options: 'i' } },
-      { artist: { $regex: searchParams.search, $options: 'i' } },
-      { writer: { $regex: searchParams.search, $options: 'i' } },
-      { tags: { $in: [new RegExp(searchParams.search, 'i')] } }
-    ]
-  }
-  if (searchParams.key) query.originalKey = searchParams.key
-  if (searchParams.difficulty) query.difficulty = searchParams.difficulty
+  const params = await searchParams
+if (params.search) {
+  query.$or = [
+    { title: { $regex: params.search, $options: 'i' } },
+    { artist: { $regex: params.search, $options: 'i' } },
+    { writer: { $regex: params.search, $options: 'i' } },
+    { tags: { $in: [new RegExp(params.search, 'i')] } }
+  ]
+}
+if (params.key) query.originalKey = params.key
+if (params.difficulty) query.difficulty = params.difficulty
 
   const songs = await Song.find(query)
     .sort({ createdAt: -1 })
