@@ -128,6 +128,54 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
     }
   }
 
+  const [isFetchingLyrics, setIsFetchingLyrics] = useState(false)
+  const [fetchLyricsError, setFetchLyricsError] = useState<string | null>(null)
+
+  const artist = form.watch("artist")
+
+  const fetchLyrics = async () => {
+    if (!title || !artist) {
+      setFetchLyricsError("Please enter both title and artist first")
+      return
+    }
+
+    setIsFetchingLyrics(true)
+    setFetchLyricsError(null)
+
+    try {
+      const response = await fetch("/api/songs/fetch-lyrics", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title, artist }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch lyrics")
+      }
+
+      // Auto-fill form with fetched data
+      if (data.title) form.setValue("title", data.title)
+      if (data.artist) form.setValue("artist", data.artist)
+      if (data.imageUrl) form.setValue("imageUrl", data.imageUrl)
+      if (data.lyrics) {
+        form.setValue("lyricsText", data.lyrics)
+      } else if (data.lyricsUrl) {
+        // Open Genius page in new tab
+        window.open(data.lyricsUrl, '_blank')
+        setFetchLyricsError("Lyrics page opened. Please copy lyrics manually.")
+      }
+
+    } catch (error) {
+      setFetchLyricsError(error instanceof Error ? error.message : "Failed to fetch lyrics")
+    } finally {
+      setIsFetchingLyrics(false)
+    }
+  }
+
   const addTag = () => {
     if (tagInput.trim() && tags.length < 10 && !tags.includes(tagInput.trim())) {
       const newTags = [...tags, tagInput.trim()]
@@ -351,6 +399,42 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
               </div>
             </CardContent>
           </Card>
+
+           {/* Fetch Lyrics Button */}
+           <div className="flex items-center gap-3 p-4 border rounded-lg bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 shadow-sm">
+            <div className="flex-1">
+              <p className="text-sm font-medium">🎵 Fetch Lyrics from Genius</p>
+              <p className="text-xs text-muted-foreground">
+                Enter title and artist above, then fetch lyrics automatically
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={fetchLyrics}
+              disabled={!title || !artist || isFetchingLyrics}
+              className="gap-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white hover:from-pink-700 hover:to-purple-700 border-none"
+            >
+              {isFetchingLyrics ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Fetching...
+                </>
+              ) : (
+                <>
+                  <Music className="h-4 w-4" />
+                  Fetch Lyrics
+                </>
+              )}
+            </Button>
+          </div>
+
+          {fetchLyricsError && (
+            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+              {fetchLyricsError}
+            </div>
+          )}
                             {/* AI Auto-fill Button */}
           <div className="flex items-center gap-3 p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 shadow-sm">
             <div className="flex-1">
