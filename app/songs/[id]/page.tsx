@@ -12,7 +12,7 @@ import { notFound } from "next/navigation"
 import { ChordTransposer } from "@/components/chord-transposer"
 import { YouTubeVideo } from "@/components/youtube-video"
 import { DeleteSongButton } from "@/components/forms/delete-song-button"
-
+import { SongContent } from "./song-content"
 // Type for song with populated createdBy field
 type PopulatedSong = Omit<ISong, 'createdBy'> & {
     createdBy?: {
@@ -64,6 +64,13 @@ export default async function SongDetailPage({
   
     // Increment view count (in a real app, you'd do this in an API route to avoid bots)
     await Song.findByIdAndUpdate(id, { $inc: { viewCount: 1 } })
+
+    const serializedSongForClient = {
+      vocalsUrl: song.vocalsUrl,
+      instrumentalUrl: song.instrumentalUrl,
+      lyricsText: song.lyricsText,
+      originalKey: song.originalKey,
+    }
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,107 +133,9 @@ export default async function SongDetailPage({
         {/* Song Details */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Vocals Audio Player - FIRST for practice */}
-                        {song.vocalsUrl && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>🎤 Vocals Track</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <audio 
-                    controls 
-                    className="w-full"
-                    src={song.vocalsUrl}
-                  >
-                    Your browser does not support the audio element.
-                  </audio>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Isolated vocals audio track - Practice singing along!
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Instrumental Audio Player */}
-            {song.instrumentalUrl && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>🎸 Instrumental Track</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <audio 
-                    controls 
-                    className="w-full"
-                    src={song.instrumentalUrl}
-                  >
-                    Your browser does not support the audio element.
-                  </audio>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Instrumental track - Play along without vocals!
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Lyrics and Chords - SECOND for reference while playing */}
-            {song.sections && song.sections.length > 0 ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Lyrics & Chords</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-8">
-                    {song.sections.map((section: any, idx: number) => (
-                      <div key={idx} className="space-y-2">
-                        <h3 className="font-semibold text-lg text-primary">
-                          [{section.name}]
-                        </h3>
-                        <div className="font-mono text-sm space-y-1 bg-muted/30 p-4 rounded-lg">
-                          {section.lines.map((line: any, lineIdx: number) => (
-                            <div key={lineIdx} className="relative">
-                              {/* Chords line */}
-                              {line.chords && line.chords.length > 0 && (
-                                <div className="text-primary font-semibold mb-1">
-                                  {line.lyrics.split('').map((char: string, charIdx: number) => {
-                                    const chord = line.chords.find((c: any) => c.position === charIdx)
-                                    return chord ? (
-                                      <span key={charIdx} className="inline-block min-w-[2ch]">
-                                        {chord.chord}
-                                      </span>
-                                    ) : (
-                                      <span key={charIdx} className="inline-block w-[1ch]"> </span>
-                                    )
-                                  })}
-                                </div>
-                              )}
-                              {/* Lyrics line */}
-                              <div>{line.lyrics || ' '}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ) : song.lyricsText ? (
-              <ChordTransposer 
-                lyricsText={song.lyricsText} 
-                originalKey={song.originalKey} 
-              />
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Lyrics & Chords</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">No lyrics available</p>
-                </CardContent>
-              </Card>
-            )}
-            
- 
+                  
+            <div className="lg:col-span-2 space-y-6">
+            <SongContent song={serializedSongForClient} />
           </div>
 
           {/* Sidebar */}
