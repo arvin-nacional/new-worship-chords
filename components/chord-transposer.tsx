@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 interface ChordTransposerProps {
   lyricsText: string
   originalKey: string
+  onTransposeChange?: (semitones: number, toKey: string) => void  // Add this
 }
 
 const keys = [
@@ -36,7 +37,11 @@ const keys = [
   { id: 17, name: "Ab", key: "Ab" },
 ]
 
-export function ChordTransposer({ lyricsText, originalKey }: ChordTransposerProps) {
+export function ChordTransposer({ 
+  lyricsText, 
+  originalKey,
+  onTransposeChange  // Add this
+}: ChordTransposerProps) {
   const [transpose, setTranspose] = useState(false)
   const [lyricChords, setLyricChords] = useState("")
   const [selectedKey, setSelectedKey] = useState("ORIGINAL")
@@ -52,22 +57,37 @@ export function ChordTransposer({ lyricsText, originalKey }: ChordTransposerProp
     })
   }, [])
 
-  const handleKeyChange = (keyValue: string) => {
-    setSelectedKey(keyValue)
-    // Skip transposition if "Original Key" is selected
-    if (keyValue && keyValue !== "" && keyValue !== "ORIGINAL" && transposerLib) {
-      try {
-        const transposed = transposerLib.transpose(lyricsText).toKey(keyValue).toString()
-        setLyricChords(transposed)
-        setTranspose(true)
-      } catch (error) {
-        console.error("Error transposing:", error)
-        setTranspose(false)
+  // Then update the handleKeyChange function (around line 55) to:
+const handleKeyChange = (keyValue: string) => {
+  setSelectedKey(keyValue)
+  
+  // Skip transposition if "Original Key" is selected
+  if (keyValue && keyValue !== "" && keyValue !== "ORIGINAL" && transposerLib) {
+    try {
+      const transposed = transposerLib.transpose(lyricsText).toKey(keyValue).toString()
+      setLyricChords(transposed)
+      setTranspose(true)
+      
+      // Calculate semitones for audio transposition
+      if (onTransposeChange) {
+        // Import the utility at the top of the file
+        import("@/lib/utils").then((utils) => {
+          const semitones = utils.calculateSemitones(originalKey, keyValue)
+          onTransposeChange(semitones, keyValue)
+        })
       }
-    } else {
+    } catch (error) {
+      console.error("Error transposing:", error)
       setTranspose(false)
     }
+  } else {
+    setTranspose(false)
+    // Reset to original
+    if (onTransposeChange) {
+      onTransposeChange(0, originalKey)
+    }
   }
+}
 
   return (
     <Card>
