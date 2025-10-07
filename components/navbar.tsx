@@ -5,6 +5,7 @@ import { Music, Menu, X, User, LogOut, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
+import { signOut } from "next-auth/react"
 
 interface NavbarProps {
   session?: {
@@ -61,12 +62,14 @@ export function Navbar({ session }: NavbarProps) {
                     <User className="h-4 w-4" />
                     <span className="text-muted-foreground">{session.user?.name}</span>
                   </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href="/api/auth/signout">
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Sign Out
-                    </Link>
-                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => signOut()}
+                    >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                    </Button>
                 </div>
               </>
             ) : (
@@ -134,12 +137,18 @@ export function Navbar({ session }: NavbarProps) {
                     <User className="h-4 w-4" />
                     <span>{session.user?.name}</span>
                   </div>
-                  <Button variant="outline" className="w-full" size="sm" asChild>
-                    <Link href="/api/auth/signout" onClick={() => setMobileMenuOpen(false)}>
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Sign Out
-                    </Link>
-                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    size="sm" 
+                    onClick={() => {
+                        setMobileMenuOpen(false);
+                        signOut();
+                    }}
+                    >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                    </Button>
                 </div>
               </>
             ) : (

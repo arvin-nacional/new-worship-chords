@@ -6,7 +6,17 @@ import { Music, ArrowRight, Clock, Star } from "lucide-react";
 import { ImageCarousel } from "@/components/image-carousel";
 import dbConnect from "@/lib/mongoose";
 import Song from "@/models/Song";
-import { ISong } from "@/models/Song";
+
+// Type for serialized song data (for RSC compatibility)
+type SerializedSong = {
+  _id: string;
+  title: string;
+  artist?: string;
+  writer: string;
+  originalKey: string;
+  updatedAt: string;
+  tags: string[];
+};
 
 const carouselImages = [
   "/images/acoustic-guitar-snare-drum-black-background-isolated.jpg",
@@ -19,17 +29,28 @@ export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   // Fetch recently updated songs
-  let recentSongs: ISong[] = [];
-  try {
-    await dbConnect();
-    recentSongs = await Song.find()
-      .sort({ updatedAt: -1 })
-      .limit(6)
-      .select('title artist writer originalKey updatedAt tags')
-      .lean();
-  } catch (error) {
-    console.error('Error fetching recent songs:', error);
-  }
+let recentSongs: SerializedSong[] = [];
+try {
+  await dbConnect();
+  const songs = await Song.find()
+    .sort({ updatedAt: -1 })
+    .limit(6)
+    .select('title artist writer originalKey updatedAt tags')
+    .lean();
+  
+  // Serialize the results for React Server Components
+  recentSongs = songs.map((song) => ({
+    _id: song._id.toString(),
+    title: song.title,
+    artist: song.artist,
+    writer: song.writer,
+    originalKey: song.originalKey,
+    updatedAt: song.updatedAt.toISOString(),
+    tags: song.tags || [],
+  }));
+} catch (error) {
+  console.error('Error fetching recent songs:', error);
+}
 
   return (
     <div className="min-h-screen">
@@ -91,8 +112,8 @@ export default async function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recentSongs.map((song: ISong) => (
-                <Link key={song._id.toString()} href={`/songs/${song._id}`}>
+            {recentSongs.map((song) => (
+              <Link key={song._id} href={`/songs/${song._id}`}>
                   <Card className="hover:shadow-lg transition-all hover:scale-[1.02] cursor-pointer h-full">
                     <CardHeader>
                       <div className="flex items-start justify-between gap-2">
