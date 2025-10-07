@@ -1,7 +1,12 @@
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { Music, ArrowRight } from "lucide-react";
+import { Music, ArrowRight, Clock, Star } from "lucide-react";
 import { ImageCarousel } from "@/components/image-carousel";
+import dbConnect from "@/lib/mongoose";
+import Song from "@/models/Song";
+import { ISong } from "@/models/Song";
 
 const carouselImages = [
   "/images/acoustic-guitar-snare-drum-black-background-isolated.jpg",
@@ -10,12 +15,27 @@ const carouselImages = [
   "/images/wide-closeup-shot-brown-piano-keyboard.jpg",
 ];
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function Home() {
+  // Fetch recently updated songs
+  let recentSongs: ISong[] = [];
+  try {
+    await dbConnect();
+    recentSongs = await Song.find()
+      .sort({ updatedAt: -1 })
+      .limit(6)
+      .select('title artist writer originalKey updatedAt tags')
+      .lean();
+  } catch (error) {
+    console.error('Error fetching recent songs:', error);
+  }
+
   return (
     <div className="min-h-screen">
       {/* Hero Carousel Section */}
       <ImageCarousel images={carouselImages} interval={4000}>
-      <div className="max-w-4xl 2xl:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 py-16">
+        <div className="max-w-4xl 2xl:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 py-16">
           <div className="flex items-center justify-center gap-3">
             <Music className="h-16 w-16 text-white drop-shadow-lg" />
             <h1 className="text-5xl md:text-7xl font-bold text-white drop-shadow-lg">
@@ -48,9 +68,85 @@ export default function Home() {
         </div>
       </ImageCarousel>
 
+      {/* Recently Updated Songs Section */}
+      {recentSongs.length > 0 && (
+        <div className="py-16 bg-background">
+          <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-bold flex items-center gap-3">
+                  <Clock className="h-8 w-8 text-primary" />
+                  Recently Updated
+                </h2>
+                <p className="text-muted-foreground mt-2">
+                  Newest additions and updates to our song library
+                </p>
+              </div>
+              <Button variant="outline" asChild>
+                <Link href="/songs">
+                  View All
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recentSongs.map((song: ISong) => (
+                <Link key={song._id.toString()} href={`/songs/${song._id}`}>
+                  <Card className="hover:shadow-lg transition-all hover:scale-[1.02] cursor-pointer h-full">
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="line-clamp-2">{song.title}</CardTitle>
+                          <CardDescription className="mt-1">
+                            {song.artist || 'Unknown Artist'}
+                          </CardDescription>
+                        </div>
+                        <Badge variant="secondary" className="shrink-0">
+                          {song.originalKey}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          By {song.writer}
+                        </p>
+                        
+                        {/* Tags */}
+                        {song.tags && song.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {song.tags.slice(0, 2).map((tag: string) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                            {song.tags.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{song.tags.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Updated time */}
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground pt-2 border-t">
+                          <Clock className="h-3 w-3" />
+                          Updated {new Date(song.updatedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Features Section */}
       <div className="bg-gradient-to-b from-background to-muted/20 py-16">
-      <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center space-y-3 p-6 rounded-lg bg-card border">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
