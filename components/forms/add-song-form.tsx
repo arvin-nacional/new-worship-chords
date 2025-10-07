@@ -313,7 +313,7 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
                   <FormItem>
                     <FormLabel>Song Title *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Amazing Grace" {...field} />
+                      <Input placeholder="Enter Song Title" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -328,7 +328,7 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
                     <FormItem>
                       <FormLabel>Artist / Performer</FormLabel>
                       <FormControl>
-                        <Input placeholder="Hillsong Worship" {...field} />
+                        <Input placeholder="Enter Artist Name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -342,7 +342,7 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
                     <FormItem>
                       <FormLabel>Writer / Composer *</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Newton" {...field} />
+                        <Input placeholder="Enter Writer's Name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
