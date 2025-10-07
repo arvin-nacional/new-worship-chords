@@ -58,9 +58,9 @@ if (params.difficulty) query.difficulty = params.difficulty
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-8">
+            <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        {/* <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
               <Music className="h-10 w-10 text-primary" />
@@ -76,7 +76,7 @@ if (params.difficulty) query.difficulty = params.difficulty
               Add Song
             </Link>
           </Button>
-        </div>
+        </div> */}
 
         {/* Search and Filters */}
         <Card>

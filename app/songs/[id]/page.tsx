@@ -74,7 +74,7 @@ export default async function SongDetailPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6 max-w-5xl">
+           <div className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Back Button */}
         <Button variant="ghost" asChild>
           <Link href="/songs">
