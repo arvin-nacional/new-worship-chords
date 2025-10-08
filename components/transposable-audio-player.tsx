@@ -65,9 +65,11 @@ export function TransposableAudioPlayer({
 
         // Handle when playback ends
         playerRef.current.onstop = () => {
-          if (!isSeekingRef.current) {
-            onPlayPause()
+          if (isSeekingRef.current) {
+            isSeekingRef.current = false
+            return
           }
+          onPlayPause()
         }
 
       } catch (error) {
@@ -137,6 +139,7 @@ export function TransposableAudioPlayer({
       animationFrameRef.current = requestAnimationFrame(updateTime)
     } else {
       if (playerRef.current?.state === "started") {
+        isSeekingRef.current = true
         playerRef.current.stop()
         offsetRef.current = (offsetRef.current + (Tone.now() - startTimeRef.current)) % duration
       }
