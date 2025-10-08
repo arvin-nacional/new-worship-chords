@@ -23,7 +23,13 @@ export async function POST(request: Request) {
         { status: 401 }
       )
     }
-
+     // Check if user is admin
+     if (!session.user.isAdmin) {
+      return NextResponse.json(
+        { error: "Forbidden. Only administrators can add songs." },
+        { status: 403 }
+      )
+    }
     // Parse and validate request body
     const body = await request.json()
     const validatedData = addSongSchema.parse(body)

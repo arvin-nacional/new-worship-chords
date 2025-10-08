@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { Play, Pause, RotateCcw } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useRef, useState, useCallback } from "react"
+import { Volume2, VolumeX } from "lucide-react"
+import { Slider } from "@/components/ui/slider"
 import * as Tone from "tone"
 
 interface TransposableAudioPlayerProps {
@@ -10,6 +10,8 @@ interface TransposableAudioPlayerProps {
   title: string
   description: string
   transposeSemitones: number
+  isPlaying: boolean
+  onPlayPause: () => void
 }
 
 export function TransposableAudioPlayer({
@@ -17,20 +19,22 @@ export function TransposableAudioPlayer({
   title,
   description,
   transposeSemitones,
+  isPlaying,
+  onPlayPause,
 }: TransposableAudioPlayerProps) {
-  const [isPlaying, setIsPlaying] = useState(false)
+  const [volume, setVolume] = useState(0.8)
+  const [isMuted, setIsMuted] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   
   const playerRef = useRef<Tone.Player | null>(null)
   const pitchShiftRef = useRef<Tone.PitchShift | null>(null)
+  const gainNodeRef = useRef<Tone.Gain | null>(null)
   const animationFrameRef = useRef<number | undefined>(undefined)
-  const startTimeRef = useRef<number>(0) // When playback started
-  const offsetRef = useRef<number>(0) // Current playback offset in the audio
-
-  const isSeekingRef = useRef<boolean>(false) // Track if we're currently seeking
-
+  const startTimeRef = useRef<number>(0)
+  const offsetRef = useRef<number>(0)
+  const isSeekingRef = useRef<boolean>(false)
 
   // Initialize Tone.js player
   useEffect(() => {
@@ -38,12 +42,15 @@ export function TransposableAudioPlayer({
       try {
         setIsLoading(true)
         
+        // Create gain node for volume control
+        gainNodeRef.current = new Tone.Gain(volume).toDestination()
+        
         // Create pitch shift effect
         pitchShiftRef.current = new Tone.PitchShift({
           pitch: transposeSemitones,
           windowSize: 0.1,
           delayTime: 0,
-        }).toDestination()
+        }).connect(gainNodeRef.current)
 
         // Create player
         playerRef.current = new Tone.Player({
@@ -57,12 +64,11 @@ export function TransposableAudioPlayer({
         }).connect(pitchShiftRef.current)
 
         // Handle when playback ends
-      playerRef.current.onstop = () => {
-        // Only change state if not seeking
-        if (!isSeekingRef.current) {
-          setIsPlaying(false)
+        playerRef.current.onstop = () => {
+          if (!isSeekingRef.current) {
+            onPlayPause()
+          }
         }
-      }
 
       } catch (error) {
         console.error("Error initializing audio player:", error)
@@ -73,14 +79,14 @@ export function TransposableAudioPlayer({
     initPlayer()
 
     return () => {
-      // Cleanup
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
       playerRef.current?.dispose()
       pitchShiftRef.current?.dispose()
+      gainNodeRef.current?.dispose()
     }
-  }, [src])
+  }, [src, onPlayPause])
 
   // Update pitch when transpose changes
   useEffect(() => {
@@ -89,28 +95,54 @@ export function TransposableAudioPlayer({
     }
   }, [transposeSemitones])
 
-  // Update current time during playback
+  // Update volume when volume changes
   useEffect(() => {
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.rampTo(isMuted ? 0 : volume, 0.1)
+    }
+  }, [volume, isMuted])
+
+  // Handle play/pause based on isPlaying prop
+  useEffect(() => {
+    if (!playerRef.current) return
+
     const updateTime = () => {
       if (isPlaying && playerRef.current?.state === "started") {
         const elapsed = Tone.now() - startTimeRef.current
         const newTime = offsetRef.current + elapsed
         
-        // Stop if we've reached the end
         if (newTime >= duration) {
-          playerRef.current?.stop()
-          setCurrentTime(duration)
-          setIsPlaying(false)
+          // End of track
           offsetRef.current = 0
+          startTimeRef.current = Tone.now()
+          setCurrentTime(0)
+          playerRef.current.start(0, 0)
         } else {
           setCurrentTime(newTime)
-          animationFrameRef.current = requestAnimationFrame(updateTime)
         }
+        
+        animationFrameRef.current = requestAnimationFrame(updateTime)
       }
     }
 
     if (isPlaying) {
+      if (playerRef.current.state === "stopped") {
+        playerRef.current.start(0, offsetRef.current % duration)
+      } 
+      
+      // else if (playerRef.current.state === "paused") {
+      //   playerRef.current.start(0, offsetRef.current % duration)
+      // }
+      startTimeRef.current = Tone.now() - offsetRef.current
       animationFrameRef.current = requestAnimationFrame(updateTime)
+    } else {
+      if (playerRef.current?.state === "started") {
+        playerRef.current.stop()
+        offsetRef.current = (offsetRef.current + (Tone.now() - startTimeRef.current)) % duration
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
     }
 
     return () => {
@@ -120,122 +152,80 @@ export function TransposableAudioPlayer({
     }
   }, [isPlaying, duration])
 
-  const handlePlayPause = async () => {
-    if (!playerRef.current) return
-
-    try {
-      await Tone.start() // Required for audio context
-
-      if (isPlaying) {
-        // Pause
-        playerRef.current.stop()
-        // Save current position
-        offsetRef.current = currentTime
-        setIsPlaying(false)
-      } else {
-        // Play from current offset
-        startTimeRef.current = Tone.now()
-        playerRef.current.start("+0", offsetRef.current)
-        setIsPlaying(true)
-      }
-    } catch (error) {
-      console.error("Error toggling playback:", error)
-    }
-  }
-
-  const handleReset = () => {
-    if (playerRef.current) {
-      playerRef.current.stop()
-      setIsPlaying(false)
-      setCurrentTime(0)
-      offsetRef.current = 0
-    }
-  }
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = parseFloat(e.target.value)
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!playerRef.current || !e.currentTarget) return
+    
+    const rect = e.currentTarget.getBoundingClientRect()
+    const seekPosition = (e.clientX - rect.left) / rect.width
+    const newTime = Math.max(0, Math.min(seekPosition * duration, duration))
+    
     setCurrentTime(newTime)
     offsetRef.current = newTime
     
-    if (playerRef.current) {
-      const wasPlaying = isPlaying
-      
-      // Set seeking flag to prevent onstop from changing play state
-      isSeekingRef.current = true
-      
-      // Stop current playback
-      playerRef.current.stop()
-      
-      // If was playing, restart from new position
-      if (wasPlaying) {
-        startTimeRef.current = Tone.now()
-        playerRef.current.start("+0", newTime)
-      }
-      
-      // Clear seeking flag after a brief delay
-      setTimeout(() => {
-        isSeekingRef.current = false
-      }, 50)
+    if (isPlaying) {
+      playerRef.current.start(0, newTime % duration)
+      startTimeRef.current = Tone.now()
     }
   }
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
+  const toggleMute = () => {
+    setIsMuted(prev => !prev)
+  }
+
+  const handleVolumeChange = (value: number[]) => {
+    setVolume(value[0])
+    if (value[0] > 0 && isMuted) {
+      setIsMuted(false)
+    }
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">{title}</h3>
-        {transposeSemitones !== 0 && (
-          <span className="text-xs text-muted-foreground">
-            {transposeSemitones > 0 ? '+' : ''}{transposeSemitones} semitones
-          </span>
-        )}
-      </div>
-      
-      <div className="flex items-center gap-3">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handlePlayPause}
-          disabled={isLoading}
-        >
-          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-        </Button>
-        
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleReset}
-          disabled={isLoading}
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
-
-        <div className="flex-1 flex items-center gap-2">
-          <span className="text-xs text-muted-foreground min-w-[40px]">
-            {formatTime(currentTime)}
-          </span>
-          <input
-            type="range"
-            min="0"
-            max={duration || 0}
-            step="0.1"
-            value={currentTime}
-            onChange={handleSeek}
-            className="flex-1"
-            disabled={isLoading}
-          />
-          <span className="text-xs text-muted-foreground min-w-[40px]">
-            {formatTime(duration)}
-          </span>
+        <div className="flex-1">
+          <h3 className="font-medium">{title}</h3>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={toggleMute}
+            className="p-2 rounded-full hover:bg-muted"
+            aria-label={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+          </button>
+          <div className="w-24">
+            <Slider
+              value={[isMuted ? 0 : volume]}
+              onValueChange={handleVolumeChange}
+              max={1}
+              step={0.01}
+              aria-label="Volume"
+            />
+          </div>
         </div>
       </div>
-
-      <p className="text-xs text-muted-foreground">{description}</p>
+      
+      <div 
+        className="h-2 bg-muted rounded-full overflow-hidden cursor-pointer relative"
+        onClick={handleSeek}
+      >
+        <div 
+          className="h-full bg-primary/50"
+          style={{ width: `${(currentTime / duration) * 100}%` }}
+        />
+      </div>
+      
+      <div className="flex justify-between text-sm text-muted-foreground">
+        <span>{formatTime(currentTime)}</span>
+        <span>{formatTime(duration)}</span>
+      </div>
     </div>
   )
+}
+
+function formatTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
