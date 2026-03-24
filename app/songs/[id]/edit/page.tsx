@@ -57,6 +57,7 @@ const initialValues = {
     tags: song.tags || [],
     vocalsUrl: song.vocalsUrl || "",
     instrumentalUrl: song.instrumentalUrl || "",
+    drumsUrl: song.drumsUrl || "",
   }
 
   return (
@@ -66,6 +67,7 @@ const initialValues = {
       songId={id}
       initialVocalsUrl={song.vocalsUrl}
       initialInstrumentalUrl={song.instrumentalUrl}
+      initialDrumsUrl={song.drumsUrl}
     />
   )
 }
