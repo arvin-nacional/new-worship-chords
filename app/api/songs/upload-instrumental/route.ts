@@ -4,6 +4,15 @@ import { uploadToS3 } from "@/lib/s3"
 import dbConnect from "@/lib/mongoose"
 import Song from "@/models/Song"
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+}
+
+export const runtime = "nodejs"
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth()

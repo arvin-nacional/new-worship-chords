@@ -167,39 +167,76 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
     form.setValue("tags", newTags)
   }
 
-  const uploadVocals = async (file: File) => {
+  const uploadTrackDirect = async (
+    file: File,
+    trackType: string,
+    setUploading: (v: boolean) => void,
+    setError: (v: string | null) => void,
+    setSuccess: (v: string | null) => void,
+    setUrl: (v: string) => void
+  ) => {
     if (!songId) {
-      setUploadError("Please save the song first before uploading vocals")
+      setError("Please save the song first before uploading")
       return
     }
 
-    setIsUploadingVocals(true)
-    setUploadError(null)
-    setExtractionSuccess(null)
+    setUploading(true)
+    setError(null)
+    setSuccess(null)
 
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("songId", songId)
-
-      const response = await fetch("/api/songs/upload-vocals", {
+      const urlResponse = await fetch("/api/songs/get-upload-url", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          songId,
+          fileName: file.name,
+          contentType: file.type,
+          trackType,
+        }),
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to upload vocals")
+      const urlData = await urlResponse.json()
+      if (!urlResponse.ok) {
+        throw new Error(urlData.error || "Failed to get upload URL")
       }
 
-      setVocalsUrl(data.vocalsUrl)
-      setExtractionSuccess("Vocals uploaded successfully!")
+      const uploadResponse = await fetch(urlData.uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload file to storage")
+      }
+
+      const updateResponse = await fetch("/api/songs/update-track-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          songId,
+          trackType,
+          fileUrl: urlData.fileUrl,
+        }),
+      })
+
+      const updateData = await updateResponse.json()
+      if (!updateResponse.ok) {
+        throw new Error(updateData.error || "Failed to update track")
+      }
+
+      setUrl(urlData.fileUrl)
+      setSuccess(`${trackType.charAt(0).toUpperCase() + trackType.slice(1)} uploaded successfully!`)
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Failed to upload vocals")
+      setError(error instanceof Error ? error.message : "Failed to upload")
     } finally {
-      setIsUploadingVocals(false)
+      setUploading(false)
     }
+  }
+
+  const uploadVocals = async (file: File) => {
+    await uploadTrackDirect(file, "vocals", setIsUploadingVocals, setUploadError, setExtractionSuccess, setVocalsUrl)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,38 +260,7 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
   }
 
   const uploadInstrumental = async (file: File) => {
-    if (!songId) {
-      setInstrumentalUploadError("Please save the song first before uploading instrumental")
-      return
-    }
-
-    setIsUploadingInstrumental(true)
-    setInstrumentalUploadError(null)
-    setInstrumentalSuccess(null)
-
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("songId", songId)
-
-      const response = await fetch("/api/songs/upload-instrumental", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to upload instrumental")
-      }
-
-      setInstrumentalUrl(data.instrumentalUrl)
-      setInstrumentalSuccess("Instrumental uploaded successfully!")
-    } catch (error) {
-      setInstrumentalUploadError(error instanceof Error ? error.message : "Failed to upload instrumental")
-    } finally {
-      setIsUploadingInstrumental(false)
-    }
+    await uploadTrackDirect(file, "instrumental", setIsUploadingInstrumental, setInstrumentalUploadError, setInstrumentalSuccess, setInstrumentalUrl)
   }
 
   const handleInstrumentalFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -278,38 +284,7 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
   }
 
   const uploadDrums = async (file: File) => {
-    if (!songId) {
-      setDrumsUploadError("Please save the song first before uploading drums")
-      return
-    }
-
-    setIsUploadingDrums(true)
-    setDrumsUploadError(null)
-    setDrumsSuccess(null)
-
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("songId", songId)
-
-      const response = await fetch("/api/songs/upload-drums", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to upload drums")
-      }
-
-      setDrumsUrl(data.drumsUrl)
-      setDrumsSuccess("Drums uploaded successfully!")
-    } catch (error) {
-      setDrumsUploadError(error instanceof Error ? error.message : "Failed to upload drums")
-    } finally {
-      setIsUploadingDrums(false)
-    }
+    await uploadTrackDirect(file, "drums", setIsUploadingDrums, setDrumsUploadError, setDrumsSuccess, setDrumsUrl)
   }
 
   const handleDrumsFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -331,38 +306,7 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
   }
 
   const uploadOthers = async (file: File) => {
-    if (!songId) {
-      setOthersUploadError("Please save the song first before uploading other track")
-      return
-    }
-
-    setIsUploadingOthers(true)
-    setOthersUploadError(null)
-    setOthersSuccess(null)
-
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("songId", songId)
-
-      const response = await fetch("/api/songs/upload-others", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to upload other track")
-      }
-
-      setOthersUrl(data.othersUrl)
-      setOthersSuccess("Other track uploaded successfully!")
-    } catch (error) {
-      setOthersUploadError(error instanceof Error ? error.message : "Failed to upload other track")
-    } finally {
-      setIsUploadingOthers(false)
-    }
+    await uploadTrackDirect(file, "others", setIsUploadingOthers, setOthersUploadError, setOthersSuccess, setOthersUrl)
   }
 
   const handleOthersFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -384,38 +328,7 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
   }
 
   const uploadGuitar = async (file: File) => {
-    if (!songId) {
-      setGuitarUploadError("Please save the song first before uploading guitar track")
-      return
-    }
-
-    setIsUploadingGuitar(true)
-    setGuitarUploadError(null)
-    setGuitarSuccess(null)
-
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("songId", songId)
-
-      const response = await fetch("/api/songs/upload-guitar", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to upload guitar track")
-      }
-
-      setGuitarUrl(data.guitarUrl)
-      setGuitarSuccess("Guitar track uploaded successfully!")
-    } catch (error) {
-      setGuitarUploadError(error instanceof Error ? error.message : "Failed to upload guitar track")
-    } finally {
-      setIsUploadingGuitar(false)
-    }
+    await uploadTrackDirect(file, "guitar", setIsUploadingGuitar, setGuitarUploadError, setGuitarSuccess, setGuitarUrl)
   }
 
   const handleGuitarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -437,38 +350,7 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
   }
 
   const uploadBass = async (file: File) => {
-    if (!songId) {
-      setBassUploadError("Please save the song first before uploading bass track")
-      return
-    }
-
-    setIsUploadingBass(true)
-    setBassUploadError(null)
-    setBassSuccess(null)
-
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("songId", songId)
-
-      const response = await fetch("/api/songs/upload-bass", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to upload bass track")
-      }
-
-      setBassUrl(data.bassUrl)
-      setBassSuccess("Bass track uploaded successfully!")
-    } catch (error) {
-      setBassUploadError(error instanceof Error ? error.message : "Failed to upload bass track")
-    } finally {
-      setIsUploadingBass(false)
-    }
+    await uploadTrackDirect(file, "bass", setIsUploadingBass, setBassUploadError, setBassSuccess, setBassUrl)
   }
 
   const handleBassFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -490,38 +372,7 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
   }
 
   const uploadPiano = async (file: File) => {
-    if (!songId) {
-      setPianoUploadError("Please save the song first before uploading piano track")
-      return
-    }
-
-    setIsUploadingPiano(true)
-    setPianoUploadError(null)
-    setPianoSuccess(null)
-
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("songId", songId)
-
-      const response = await fetch("/api/songs/upload-piano", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to upload piano track")
-      }
-
-      setPianoUrl(data.pianoUrl)
-      setPianoSuccess("Piano track uploaded successfully!")
-    } catch (error) {
-      setPianoUploadError(error instanceof Error ? error.message : "Failed to upload piano track")
-    } finally {
-      setIsUploadingPiano(false)
-    }
+    await uploadTrackDirect(file, "piano", setIsUploadingPiano, setPianoUploadError, setPianoSuccess, setPianoUrl)
   }
 
   const handlePianoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

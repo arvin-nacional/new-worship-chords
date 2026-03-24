@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3"
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 if (!process.env.S3_REGION || !process.env.S3_ACCESS_KEY_ID || !process.env.S3_SECRET_ACCESS_KEY || !process.env.S3_BUCKET) {
   throw new Error("Missing required S3 environment variables")
@@ -49,6 +50,25 @@ export async function deleteFromS3(fileUrl: string): Promise<void> {
     console.error("Error deleting from S3:", error)
     throw error
   }
+}
+
+export async function getPresignedUploadUrl(
+  fileName: string,
+  contentType: string,
+  _trackType: string
+): Promise<{ uploadUrl: string; fileUrl: string }> {
+  const key = `vocals/${Date.now()}-${fileName}`
+
+  const command = new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: key,
+    ContentType: contentType,
+  })
+
+  const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 })
+  const fileUrl = `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION}.amazonaws.com/${key}`
+
+  return { uploadUrl, fileUrl }
 }
 
 export { s3Client }
