@@ -68,6 +68,11 @@ export default async function SongDetailPage({
     const serializedSongForClient = {
       vocalsUrl: song.vocalsUrl,
       instrumentalUrl: song.instrumentalUrl,
+      drumsUrl: song.drumsUrl,
+      othersUrl: song.othersUrl,
+      guitarUrl: song.guitarUrl,
+      bassUrl: song.bassUrl,
+      pianoUrl: song.pianoUrl,
       lyricsText: song.lyricsText,
       originalKey: song.originalKey,
     }

@@ -57,6 +57,11 @@ const initialValues = {
     tags: song.tags || [],
     vocalsUrl: song.vocalsUrl || "",
     instrumentalUrl: song.instrumentalUrl || "",
+    drumsUrl: song.drumsUrl || "",
+    othersUrl: song.othersUrl || "",
+    guitarUrl: song.guitarUrl || "",
+    bassUrl: song.bassUrl || "",
+    pianoUrl: song.pianoUrl || "",
   }
 
   return (
@@ -66,6 +71,11 @@ const initialValues = {
       songId={id}
       initialVocalsUrl={song.vocalsUrl}
       initialInstrumentalUrl={song.instrumentalUrl}
+      initialDrumsUrl={song.drumsUrl}
+      initialOthersUrl={song.othersUrl}
+      initialGuitarUrl={song.guitarUrl}
+      initialBassUrl={song.bassUrl}
+      initialPianoUrl={song.pianoUrl}
     />
   )
 }

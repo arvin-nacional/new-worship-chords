@@ -41,9 +41,14 @@ interface SongFormProps {
   songId?: string
   initialVocalsUrl?: string
   initialInstrumentalUrl?: string
+  initialDrumsUrl?: string
+  initialOthersUrl?: string
+  initialGuitarUrl?: string
+  initialBassUrl?: string
+  initialPianoUrl?: string
 }
 
-export function AddSongForm({ mode = "add", initialValues, songId, initialVocalsUrl, initialInstrumentalUrl }: SongFormProps) {
+export function AddSongForm({ mode = "add", initialValues, songId, initialVocalsUrl, initialInstrumentalUrl, initialDrumsUrl, initialOthersUrl, initialGuitarUrl, initialBassUrl, initialPianoUrl }: SongFormProps) {
   const [tags, setTags] = useState<string[]>(initialValues?.tags || [])
   const [tagInput, setTagInput] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -60,7 +65,26 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
   const [instrumentalUploadError, setInstrumentalUploadError] = useState<string | null>(null)
   const [instrumentalSuccess, setInstrumentalSuccess] = useState<string | null>(null)
   const [instrumentalUrl, setInstrumentalUrl] = useState<string | null>(initialInstrumentalUrl || null)
-  
+  const [isUploadingDrums, setIsUploadingDrums] = useState(false)
+  const [drumsUploadError, setDrumsUploadError] = useState<string | null>(null)
+  const [drumsSuccess, setDrumsSuccess] = useState<string | null>(null)
+  const [drumsUrl, setDrumsUrl] = useState<string | null>(initialDrumsUrl || null)
+  const [isUploadingOthers, setIsUploadingOthers] = useState(false)
+  const [othersUploadError, setOthersUploadError] = useState<string | null>(null)
+  const [othersSuccess, setOthersSuccess] = useState<string | null>(null)
+  const [othersUrl, setOthersUrl] = useState<string | null>(initialOthersUrl || null)
+  const [isUploadingGuitar, setIsUploadingGuitar] = useState(false)
+  const [guitarUploadError, setGuitarUploadError] = useState<string | null>(null)
+  const [guitarSuccess, setGuitarSuccess] = useState<string | null>(null)
+  const [guitarUrl, setGuitarUrl] = useState<string | null>(initialGuitarUrl || null)
+  const [isUploadingBass, setIsUploadingBass] = useState(false)
+  const [bassUploadError, setBassUploadError] = useState<string | null>(null)
+  const [bassSuccess, setBassSuccess] = useState<string | null>(null)
+  const [bassUrl, setBassUrl] = useState<string | null>(initialBassUrl || null)
+  const [isUploadingPiano, setIsUploadingPiano] = useState(false)
+  const [pianoUploadError, setPianoUploadError] = useState<string | null>(null)
+  const [pianoSuccess, setPianoSuccess] = useState<string | null>(null)
+  const [pianoUrl, setPianoUrl] = useState<string | null>(initialPianoUrl || null)
 
   const form = useForm<AddSongFormValues>({
     resolver: zodResolver(addSongSchema),
@@ -250,6 +274,271 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
       }
 
       uploadInstrumental(file)
+    }
+  }
+
+  const uploadDrums = async (file: File) => {
+    if (!songId) {
+      setDrumsUploadError("Please save the song first before uploading drums")
+      return
+    }
+
+    setIsUploadingDrums(true)
+    setDrumsUploadError(null)
+    setDrumsSuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("songId", songId)
+
+      const response = await fetch("/api/songs/upload-drums", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload drums")
+      }
+
+      setDrumsUrl(data.drumsUrl)
+      setDrumsSuccess("Drums uploaded successfully!")
+    } catch (error) {
+      setDrumsUploadError(error instanceof Error ? error.message : "Failed to upload drums")
+    } finally {
+      setIsUploadingDrums(false)
+    }
+  }
+
+  const handleDrumsFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const validTypes = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/m4a"]
+      if (!validTypes.includes(file.type)) {
+        setDrumsUploadError("Please upload a valid audio file (WAV, MP3, or M4A)")
+        return
+      }
+      
+      if (file.size > 50 * 1024 * 1024) {
+        setDrumsUploadError("File size must be less than 50MB")
+        return
+      }
+
+      uploadDrums(file)
+    }
+  }
+
+  const uploadOthers = async (file: File) => {
+    if (!songId) {
+      setOthersUploadError("Please save the song first before uploading other track")
+      return
+    }
+
+    setIsUploadingOthers(true)
+    setOthersUploadError(null)
+    setOthersSuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("songId", songId)
+
+      const response = await fetch("/api/songs/upload-others", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload other track")
+      }
+
+      setOthersUrl(data.othersUrl)
+      setOthersSuccess("Other track uploaded successfully!")
+    } catch (error) {
+      setOthersUploadError(error instanceof Error ? error.message : "Failed to upload other track")
+    } finally {
+      setIsUploadingOthers(false)
+    }
+  }
+
+  const handleOthersFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const validTypes = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/m4a"]
+      if (!validTypes.includes(file.type)) {
+        setOthersUploadError("Please upload a valid audio file (WAV, MP3, or M4A)")
+        return
+      }
+      
+      if (file.size > 50 * 1024 * 1024) {
+        setOthersUploadError("File size must be less than 50MB")
+        return
+      }
+
+      uploadOthers(file)
+    }
+  }
+
+  const uploadGuitar = async (file: File) => {
+    if (!songId) {
+      setGuitarUploadError("Please save the song first before uploading guitar track")
+      return
+    }
+
+    setIsUploadingGuitar(true)
+    setGuitarUploadError(null)
+    setGuitarSuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("songId", songId)
+
+      const response = await fetch("/api/songs/upload-guitar", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload guitar track")
+      }
+
+      setGuitarUrl(data.guitarUrl)
+      setGuitarSuccess("Guitar track uploaded successfully!")
+    } catch (error) {
+      setGuitarUploadError(error instanceof Error ? error.message : "Failed to upload guitar track")
+    } finally {
+      setIsUploadingGuitar(false)
+    }
+  }
+
+  const handleGuitarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const validTypes = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/m4a"]
+      if (!validTypes.includes(file.type)) {
+        setGuitarUploadError("Please upload a valid audio file (WAV, MP3, or M4A)")
+        return
+      }
+      
+      if (file.size > 50 * 1024 * 1024) {
+        setGuitarUploadError("File size must be less than 50MB")
+        return
+      }
+
+      uploadGuitar(file)
+    }
+  }
+
+  const uploadBass = async (file: File) => {
+    if (!songId) {
+      setBassUploadError("Please save the song first before uploading bass track")
+      return
+    }
+
+    setIsUploadingBass(true)
+    setBassUploadError(null)
+    setBassSuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("songId", songId)
+
+      const response = await fetch("/api/songs/upload-bass", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload bass track")
+      }
+
+      setBassUrl(data.bassUrl)
+      setBassSuccess("Bass track uploaded successfully!")
+    } catch (error) {
+      setBassUploadError(error instanceof Error ? error.message : "Failed to upload bass track")
+    } finally {
+      setIsUploadingBass(false)
+    }
+  }
+
+  const handleBassFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const validTypes = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/m4a"]
+      if (!validTypes.includes(file.type)) {
+        setBassUploadError("Please upload a valid audio file (WAV, MP3, or M4A)")
+        return
+      }
+      
+      if (file.size > 50 * 1024 * 1024) {
+        setBassUploadError("File size must be less than 50MB")
+        return
+      }
+
+      uploadBass(file)
+    }
+  }
+
+  const uploadPiano = async (file: File) => {
+    if (!songId) {
+      setPianoUploadError("Please save the song first before uploading piano track")
+      return
+    }
+
+    setIsUploadingPiano(true)
+    setPianoUploadError(null)
+    setPianoSuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("songId", songId)
+
+      const response = await fetch("/api/songs/upload-piano", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload piano track")
+      }
+
+      setPianoUrl(data.pianoUrl)
+      setPianoSuccess("Piano track uploaded successfully!")
+    } catch (error) {
+      setPianoUploadError(error instanceof Error ? error.message : "Failed to upload piano track")
+    } finally {
+      setIsUploadingPiano(false)
+    }
+  }
+
+  const handlePianoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const validTypes = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/m4a"]
+      if (!validTypes.includes(file.type)) {
+        setPianoUploadError("Please upload a valid audio file (WAV, MP3, or M4A)")
+        return
+      }
+      
+      if (file.size > 50 * 1024 * 1024) {
+        setPianoUploadError("File size must be less than 50MB")
+        return
+      }
+
+      uploadPiano(file)
     }
   }
 
@@ -706,6 +995,308 @@ Or enter your own lyrics with chords above the words.`}
                   )}
                 </div>
               )}
+                </div>
+              )}
+
+              {/* Drums File Upload */}
+              {mode === "edit" && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Upload Drums Audio File</label>
+                    <div className="mt-2">
+                      <label 
+                        htmlFor="drums-upload"
+                        className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                      >
+                        {isUploadingDrums ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5" />
+                            <span>Click to upload drums audio file (WAV, MP3, M4A)</span>
+                          </>
+                        )}
+                      </label>
+                      <input
+                        id="drums-upload"
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleDrumsFileChange}
+                        disabled={isUploadingDrums}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Max file size: 50MB
+                    </p>
+                  </div>
+
+                  {drumsUploadError && (
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{drumsUploadError}</span>
+                    </div>
+                  )}
+
+                  {drumsSuccess && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3 rounded-md border border-green-200 dark:border-green-800">
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <span>{drumsSuccess}</span>
+                    </div>
+                  )}
+
+                  {drumsUrl && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Uploaded Drums:</p>
+                      <audio 
+                        controls 
+                        className="w-full"
+                        src={drumsUrl}
+                      >
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Guitar File Upload */}
+              {mode === "edit" && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Upload Guitar Track</label>
+                    <div className="mt-2">
+                      <label 
+                        htmlFor="guitar-upload"
+                        className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                      >
+                        {isUploadingGuitar ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5" />
+                            <span>🎸 Click to upload guitar audio (WAV, MP3, M4A)</span>
+                          </>
+                        )}
+                      </label>
+                      <input
+                        id="guitar-upload"
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleGuitarFileChange}
+                        disabled={isUploadingGuitar}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Max file size: 50MB</p>
+                  </div>
+
+                  {guitarUploadError && (
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{guitarUploadError}</span>
+                    </div>
+                  )}
+
+                  {guitarSuccess && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3 rounded-md border border-green-200 dark:border-green-800">
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <span>{guitarSuccess}</span>
+                    </div>
+                  )}
+
+                  {guitarUrl && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Uploaded Guitar Track:</p>
+                      <audio controls className="w-full" src={guitarUrl}>
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Bass File Upload */}
+              {mode === "edit" && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Upload Bass Track</label>
+                    <div className="mt-2">
+                      <label 
+                        htmlFor="bass-upload"
+                        className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                      >
+                        {isUploadingBass ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5" />
+                            <span>🎸 Click to upload bass audio (WAV, MP3, M4A)</span>
+                          </>
+                        )}
+                      </label>
+                      <input
+                        id="bass-upload"
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleBassFileChange}
+                        disabled={isUploadingBass}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Max file size: 50MB</p>
+                  </div>
+
+                  {bassUploadError && (
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{bassUploadError}</span>
+                    </div>
+                  )}
+
+                  {bassSuccess && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3 rounded-md border border-green-200 dark:border-green-800">
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <span>{bassSuccess}</span>
+                    </div>
+                  )}
+
+                  {bassUrl && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Uploaded Bass Track:</p>
+                      <audio controls className="w-full" src={bassUrl}>
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Piano File Upload */}
+              {mode === "edit" && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Upload Piano Track</label>
+                    <div className="mt-2">
+                      <label 
+                        htmlFor="piano-upload"
+                        className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                      >
+                        {isUploadingPiano ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5" />
+                            <span>🎹 Click to upload piano audio (WAV, MP3, M4A)</span>
+                          </>
+                        )}
+                      </label>
+                      <input
+                        id="piano-upload"
+                        type="file"
+                        accept="audio/*"
+                        onChange={handlePianoFileChange}
+                        disabled={isUploadingPiano}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Max file size: 50MB</p>
+                  </div>
+
+                  {pianoUploadError && (
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{pianoUploadError}</span>
+                    </div>
+                  )}
+
+                  {pianoSuccess && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3 rounded-md border border-green-200 dark:border-green-800">
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <span>{pianoSuccess}</span>
+                    </div>
+                  )}
+
+                  {pianoUrl && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Uploaded Piano Track:</p>
+                      <audio controls className="w-full" src={pianoUrl}>
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Others File Upload */}
+              {mode === "edit" && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Upload Others Track</label>
+                    <p className="text-xs text-muted-foreground">Any other audio track</p>
+                    <div className="mt-2">
+                      <label 
+                        htmlFor="others-upload"
+                        className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                      >
+                        {isUploadingOthers ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5" />
+                            <span>📁 Click to upload other audio (WAV, MP3, M4A)</span>
+                          </>
+                        )}
+                      </label>
+                      <input
+                        id="others-upload"
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleOthersFileChange}
+                        disabled={isUploadingOthers}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Max file size: 50MB</p>
+                  </div>
+
+                  {othersUploadError && (
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{othersUploadError}</span>
+                    </div>
+                  )}
+
+                  {othersSuccess && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3 rounded-md border border-green-200 dark:border-green-800">
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <span>{othersSuccess}</span>
+                    </div>
+                  )}
+
+                  {othersUrl && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Uploaded Others Track:</p>
+                      <audio controls className="w-full" src={othersUrl}>
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
                 </div>
               )}
 
