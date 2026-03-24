@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Music, Plus, X, Sparkles, Loader2, Wand2, Mic, CheckCircle2, AlertCircle, Upload } from "lucide-react"
+import { Music, Plus, X, Loader2, Wand2, CheckCircle2, AlertCircle, Upload, Trash2, Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -393,6 +393,37 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
     }
   }
 
+  const [isDeletingTrack, setIsDeletingTrack] = useState<string | null>(null)
+
+  const deleteTrack = async (
+    trackType: string,
+    setUrl: (v: string | null) => void,
+    setSuccess: (v: string | null) => void
+  ) => {
+    if (!songId) return
+
+    setIsDeletingTrack(trackType)
+    try {
+      const response = await fetch("/api/songs/delete-track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ songId, trackType }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete track")
+      }
+
+      setUrl(null)
+      setSuccess(`${trackType.charAt(0).toUpperCase() + trackType.slice(1)} track deleted`)
+    } catch (error) {
+      console.error("Delete error:", error)
+    } finally {
+      setIsDeletingTrack(null)
+    }
+  }
+
   const onSubmit = async (data: AddSongFormValues) => {
     setIsSubmitting(true)
     setSubmitError(null)
@@ -769,7 +800,23 @@ Or enter your own lyrics with chords above the words.`}
                   {/* Audio Player for Uploaded Vocals */}
                   {vocalsUrl && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Uploaded Vocals:</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Uploaded Vocals:</p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTrack("vocals", setVocalsUrl, setExtractionSuccess)}
+                          disabled={isDeletingTrack === "vocals"}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          {isDeletingTrack === "vocals" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                       <audio 
                         controls 
                         className="w-full"
@@ -779,8 +826,10 @@ Or enter your own lyrics with chords above the words.`}
                       </audio>
                     </div>
                   )}
+                </div>
+              )}
 
-                                {/* Instrumental File Upload */}
+              {/* Instrumental File Upload */}
               {mode === "edit" && (
                 <div className="space-y-4">
                   <div>
@@ -834,7 +883,23 @@ Or enter your own lyrics with chords above the words.`}
                   {/* Audio Player for Uploaded Instrumental */}
                   {instrumentalUrl && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Uploaded Instrumental:</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Uploaded Instrumental:</p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTrack("instrumental", setInstrumentalUrl, setInstrumentalSuccess)}
+                          disabled={isDeletingTrack === "instrumental"}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          {isDeletingTrack === "instrumental" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                       <audio 
                         controls 
                         className="w-full"
@@ -844,8 +909,6 @@ Or enter your own lyrics with chords above the words.`}
                       </audio>
                     </div>
                   )}
-                </div>
-              )}
                 </div>
               )}
 
@@ -901,7 +964,23 @@ Or enter your own lyrics with chords above the words.`}
 
                   {drumsUrl && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Uploaded Drums:</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Uploaded Drums:</p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTrack("drums", setDrumsUrl, setDrumsSuccess)}
+                          disabled={isDeletingTrack === "drums"}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          {isDeletingTrack === "drums" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                       <audio 
                         controls 
                         className="w-full"
@@ -964,7 +1043,23 @@ Or enter your own lyrics with chords above the words.`}
 
                   {guitarUrl && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Uploaded Guitar Track:</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Uploaded Guitar Track:</p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTrack("guitar", setGuitarUrl, setGuitarSuccess)}
+                          disabled={isDeletingTrack === "guitar"}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          {isDeletingTrack === "guitar" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                       <audio controls className="w-full" src={guitarUrl}>
                         Your browser does not support the audio element.
                       </audio>
@@ -1023,7 +1118,23 @@ Or enter your own lyrics with chords above the words.`}
 
                   {bassUrl && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Uploaded Bass Track:</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Uploaded Bass Track:</p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTrack("bass", setBassUrl, setBassSuccess)}
+                          disabled={isDeletingTrack === "bass"}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          {isDeletingTrack === "bass" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                       <audio controls className="w-full" src={bassUrl}>
                         Your browser does not support the audio element.
                       </audio>
@@ -1082,7 +1193,23 @@ Or enter your own lyrics with chords above the words.`}
 
                   {pianoUrl && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Uploaded Piano Track:</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Uploaded Piano Track:</p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTrack("piano", setPianoUrl, setPianoSuccess)}
+                          disabled={isDeletingTrack === "piano"}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          {isDeletingTrack === "piano" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                       <audio controls className="w-full" src={pianoUrl}>
                         Your browser does not support the audio element.
                       </audio>
@@ -1142,7 +1269,23 @@ Or enter your own lyrics with chords above the words.`}
 
                   {othersUrl && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Uploaded Others Track:</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Uploaded Others Track:</p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTrack("others", setOthersUrl, setOthersSuccess)}
+                          disabled={isDeletingTrack === "others"}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          {isDeletingTrack === "others" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                       <audio controls className="w-full" src={othersUrl}>
                         Your browser does not support the audio element.
                       </audio>
