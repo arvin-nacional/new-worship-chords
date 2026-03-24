@@ -10,6 +10,7 @@ import { Play, Pause } from "lucide-react"
 interface SongContentData {
     vocalsUrl?: string
     instrumentalUrl?: string
+    drumsUrl?: string
     lyricsText?: string
     originalKey: string
 }
@@ -78,6 +79,25 @@ export function SongContent({ song }: SongContentProps) {
                             src={song.instrumentalUrl}
                             title="Instrumental"
                             description="Instrumental track - Play along without vocals!"
+                            transposeSemitones={transposeSemitones}
+                            isPlaying={isPlaying}
+                            onPlayPause={togglePlayPause}
+                        />
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Drums Audio Player */}
+            {song.drumsUrl && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>🥁 Drums Track</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <TransposableAudioPlayer
+                            src={song.drumsUrl}
+                            title="Drums"
+                            description="Isolated drums track - Practice your timing!"
                             transposeSemitones={transposeSemitones}
                             isPlaying={isPlaying}
                             onPlayPause={togglePlayPause}

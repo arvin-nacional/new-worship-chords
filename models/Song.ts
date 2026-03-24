@@ -52,9 +52,8 @@ export interface ISong extends Document {
   spotifyId?: string;
   vocalsUrl?: string; // S3 URL for extracted vocals
   instrumentalUrl?: string; // S3 URL for extracted instrumentals
+  drumsUrl?: string; // S3 URL for drums track
 
-
-  
   // Metadata
   tags: string[];
   tempo?: number; // BPM
@@ -226,6 +225,10 @@ const songSchema = new Schema<ISong>(
       trim: true,
     },
     instrumentalUrl: {
+      type: String,
+      trim: true,
+    },
+    drumsUrl: {
       type: String,
       trim: true,
     },

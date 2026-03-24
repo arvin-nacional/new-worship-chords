@@ -41,9 +41,10 @@ interface SongFormProps {
   songId?: string
   initialVocalsUrl?: string
   initialInstrumentalUrl?: string
+  initialDrumsUrl?: string
 }
 
-export function AddSongForm({ mode = "add", initialValues, songId, initialVocalsUrl, initialInstrumentalUrl }: SongFormProps) {
+export function AddSongForm({ mode = "add", initialValues, songId, initialVocalsUrl, initialInstrumentalUrl, initialDrumsUrl }: SongFormProps) {
   const [tags, setTags] = useState<string[]>(initialValues?.tags || [])
   const [tagInput, setTagInput] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -60,7 +61,10 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
   const [instrumentalUploadError, setInstrumentalUploadError] = useState<string | null>(null)
   const [instrumentalSuccess, setInstrumentalSuccess] = useState<string | null>(null)
   const [instrumentalUrl, setInstrumentalUrl] = useState<string | null>(initialInstrumentalUrl || null)
-  
+  const [isUploadingDrums, setIsUploadingDrums] = useState(false)
+  const [drumsUploadError, setDrumsUploadError] = useState<string | null>(null)
+  const [drumsSuccess, setDrumsSuccess] = useState<string | null>(null)
+  const [drumsUrl, setDrumsUrl] = useState<string | null>(initialDrumsUrl || null)
 
   const form = useForm<AddSongFormValues>({
     resolver: zodResolver(addSongSchema),
@@ -250,6 +254,61 @@ export function AddSongForm({ mode = "add", initialValues, songId, initialVocals
       }
 
       uploadInstrumental(file)
+    }
+  }
+
+  const uploadDrums = async (file: File) => {
+    if (!songId) {
+      setDrumsUploadError("Please save the song first before uploading drums")
+      return
+    }
+
+    setIsUploadingDrums(true)
+    setDrumsUploadError(null)
+    setDrumsSuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("songId", songId)
+
+      const response = await fetch("/api/songs/upload-drums", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload drums")
+      }
+
+      setDrumsUrl(data.drumsUrl)
+      setDrumsSuccess("Drums uploaded successfully!")
+    } catch (error) {
+      setDrumsUploadError(error instanceof Error ? error.message : "Failed to upload drums")
+    } finally {
+      setIsUploadingDrums(false)
+    }
+  }
+
+  const handleDrumsFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      const validTypes = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/m4a"]
+      if (!validTypes.includes(file.type)) {
+        setDrumsUploadError("Please upload a valid audio file (WAV, MP3, or M4A)")
+        return
+      }
+      
+      // Validate file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        setDrumsUploadError("File size must be less than 50MB")
+        return
+      }
+
+      uploadDrums(file)
     }
   }
 
@@ -576,7 +635,7 @@ Or enter your own lyrics with chords above the words.`}
               />
 
               {/* Vocals File Upload */}
-              {mode === "edit" && (
+              
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium">Upload Vocals Audio File</label>
@@ -641,7 +700,6 @@ Or enter your own lyrics with chords above the words.`}
                   )}
 
                                 {/* Instrumental File Upload */}
-              {mode === "edit" && (
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium">Upload Instrumental Audio File</label>
@@ -705,11 +763,76 @@ Or enter your own lyrics with chords above the words.`}
                     </div>
                   )}
                 </div>
-              )}
-                </div>
-              )}
 
-              <FormField
+                {/* Drums File Upload */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Upload Drums Audio File</label>
+                    <div className="mt-2">
+                      <label 
+                        htmlFor="drums-upload"
+                        className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                      >
+                        {isUploadingDrums ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5" />
+                            <span>Click to upload drums audio file (WAV, MP3, M4A)</span>
+                          </>
+                        )}
+                      </label>
+                      <input
+                        id="drums-upload"
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleDrumsFileChange}
+                        disabled={isUploadingDrums}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Max file size: 50MB
+                    </p>
+                  </div>
+
+                  {/* Upload Status Messages */}
+                  {drumsUploadError && (
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{drumsUploadError}</span>
+                    </div>
+                  )}
+
+                  {drumsSuccess && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 p-3 rounded-md border border-green-200 dark:border-green-800">
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <span>{drumsSuccess}</span>
+                    </div>
+                  )}
+
+                  {/* Audio Player for Uploaded Drums */}
+                  {drumsUrl && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Uploaded Drums:</p>
+                      <audio 
+                        controls 
+                        className="w-full"
+                        src={drumsUrl}
+                      >
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+                </div>
+              
+                </div>
+              
+
+              {/* <FormField
                 control={form.control}
                 name="spotifyId"
                 render={({ field }) => (
@@ -721,9 +844,9 @@ Or enter your own lyrics with chords above the words.`}
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
 
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="imageUrl"
                 render={({ field }) => (
@@ -738,7 +861,7 @@ Or enter your own lyrics with chords above the words.`}
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
             </CardContent>
           </Card>
 
